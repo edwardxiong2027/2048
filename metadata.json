@@ -1,0 +1,5 @@
+{
+  "name": "Neon Sums: AI 2048",
+  "description": "A vibrant, AI-assisted evolution of the classic 2048 puzzle game. Features smooth animations, an undo button, and a Gemini-powered assistant to help you calculate the best moves.",
+  "requestFramePermissions": []
+}
