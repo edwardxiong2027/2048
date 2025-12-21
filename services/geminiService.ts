@@ -1,14 +1,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIHintResponse } from "../types";
 
-// Initialize the Gemini AI client
-// NOTE: In a real production app, you might proxy this through a backend to protect the key.
-// However, per instructions, we use process.env.API_KEY directly.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Prefer Vite env keys, fall back to process for safety
+const apiKey =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
+  (typeof import.meta !== "undefined" && import.meta.env?.GEMINI_API_KEY) ||
+  // process is undefined in the browser unless Vite replaces it; guard to avoid ReferenceErrors
+  (typeof process !== "undefined" ? (process.env.API_KEY as string | undefined) : undefined);
+
+// Only initialize the client when a key exists to avoid crashing the app in dev.
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 const MODEL_NAME = "gemini-2.5-flash";
 
 export const getBestMove = async (matrix: number[][]): Promise<AIHintResponse> => {
+  if (!ai) {
+    return { direction: "UP", reason: "AI key missing; showing a safe default." };
+  }
+
   const boardString = JSON.stringify(matrix);
   
   const prompt = `
@@ -56,6 +65,8 @@ export const getBestMove = async (matrix: number[][]): Promise<AIHintResponse> =
 };
 
 export const getGameCommentary = async (score: number, won: boolean): Promise<string> => {
+  if (!ai) return won ? "You are a legend!" : "Good effort, try again!";
+
   const style = won ? "celebratory and epic" : "witty, slightly sarcastic but encouraging";
   const prompt = `
     I just finished playing a game of 2048.
