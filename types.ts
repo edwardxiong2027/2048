@@ -29,3 +29,5 @@ export interface AIHintResponse {
 
 export type GameMode = 'classic' | 'fun';
 export type InteractionMode = 'none' | 'swap_select_1' | 'swap_select_2' | 'eliminate';
+
+export type GridSize = 4 | 5 | 6;

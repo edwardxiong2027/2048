@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { RotateCcw, Trophy, BrainCircuit, Wand2, Undo2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Trash2, ArrowLeftRight, Sparkles } from 'lucide-react';
 import Board from './components/Board';
-import { GameState, Direction, AIHintResponse, GameMode, InteractionMode } from './types';
+import { GameState, Direction, AIHintResponse, GameMode, InteractionMode, GridSize } from './types';
 import { initializeGame, moveTiles, checkGameOver, tilesToMatrix, spawnTile, swapTiles, eliminateTile } from './services/gameLogic';
 import { getBestMove, getGameCommentary } from './services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { GRID_SIZES } from './constants';
 
 const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>('fun');
+  const [gridSize, setGridSize] = useState<GridSize>(4);
   const [gameState, setGameState] = useState<GameState>({
     tiles: [],
     score: 0,
@@ -26,18 +28,22 @@ const App: React.FC = () => {
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('none');
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
 
-  // Load best score
+  const bestScoreKey = (mode: GameMode, size: GridSize) => `neonSums_bestScore_${mode}_${size}`;
+
+  // Load best score for mode + grid size and start fresh game on changes
   useEffect(() => {
-    const savedBest = localStorage.getItem(`neonSums_bestScore_${gameMode}`);
+    const savedBest = localStorage.getItem(bestScoreKey(gameMode, gridSize));
     if (savedBest) {
       setGameState(prev => ({ ...prev, bestScore: parseInt(savedBest) }));
+    } else {
+      setGameState(prev => ({ ...prev, bestScore: 0 }));
     }
     startNewGame();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameMode]);
+  }, [gameMode, gridSize]);
 
   const startNewGame = () => {
-    const { tiles, score } = initializeGame();
+    const { tiles, score } = initializeGame(gridSize);
     setGameState(prev => ({
       ...prev,
       tiles,
@@ -64,19 +70,19 @@ const App: React.FC = () => {
     setIsProcessing(true);
 
     const currentTiles = gameState.tiles;
-    const result = moveTiles(currentTiles, direction);
+    const result = moveTiles(currentTiles, direction, gridSize);
     
     if (result.moved) {
       if (gameMode === 'fun') saveStateToHistory();
       
       setTimeout(() => {
-        const withNewTile = spawnTile(result.tiles);
-        const isGameOver = checkGameOver(withNewTile);
+        const withNewTile = spawnTile(result.tiles, gridSize);
+        const isGameOver = checkGameOver(withNewTile, gridSize);
         
         setGameState(prev => {
           const newScore = prev.score + result.scoreIncrease;
           const newBest = Math.max(newScore, prev.bestScore);
-          localStorage.setItem(`neonSums_bestScore_${gameMode}`, newBest.toString());
+          localStorage.setItem(bestScoreKey(gameMode, gridSize), newBest.toString());
 
           if (isGameOver && gameMode === 'fun') {
              getGameCommentary(newScore, false).then(setAiComment);
@@ -97,7 +103,7 @@ const App: React.FC = () => {
     } else {
       setIsProcessing(false);
     }
-  }, [gameState.status, gameState.tiles, gameState.score, isProcessing, saveStateToHistory, gameMode, interactionMode]);
+  }, [gameState.status, gameState.tiles, gameState.score, isProcessing, saveStateToHistory, gameMode, interactionMode, gridSize, bestScoreKey]);
 
   // Keyboard controls
   useEffect(() => {
@@ -138,7 +144,7 @@ const App: React.FC = () => {
   const handleAskAI = async () => {
     if (aiLoading || gameState.status !== 'playing') return;
     setAiLoading(true);
-    const matrix = tilesToMatrix(gameState.tiles);
+    const matrix = tilesToMatrix(gameState.tiles, gridSize);
     const hint = await getBestMove(matrix);
     setAiHint(hint);
     setAiLoading(false);
@@ -185,6 +191,11 @@ const App: React.FC = () => {
     }
   };
 
+  const handleGridSizeChange = (size: GridSize) => {
+    if (size === gridSize) return;
+    setGridSize(size);
+  };
+
   // Touch handling
   const touchStart = useRef<{x: number, y: number} | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -205,7 +216,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-900 overflow-hidden relative">
+    <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-900 overflow-x-hidden overflow-y-auto relative">
       
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-20">
@@ -257,6 +268,27 @@ const App: React.FC = () => {
              </div>
             <span className="text-xl font-bold text-white">{gameState.bestScore}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Board Size Selector */}
+      <div className="w-full max-w-xl flex items-center justify-between mb-3 z-10 px-2 sm:px-0 gap-2">
+        <span className="text-slate-300 text-sm font-semibold">Board Size</span>
+        <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700 gap-1">
+          {GRID_SIZES.map(size => (
+            <button
+              key={size}
+              onClick={() => handleGridSizeChange(size)}
+              className={clsx(
+                "px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                gridSize === size
+                  ? "bg-indigo-600 text-white shadow"
+                  : "text-slate-400 hover:text-slate-200"
+              )}
+            >
+              {size}x{size}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -355,6 +387,7 @@ const App: React.FC = () => {
       >
         <Board 
           tiles={gameState.tiles} 
+          gridSize={gridSize}
           interactionMode={interactionMode}
           selectedTileId={selectedTileId}
           onTileClick={handleTileClick}

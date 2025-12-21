@@ -1,6 +1,6 @@
-import { Direction } from "./types";
+import { Direction, GridSize } from "./types";
 
-export const GRID_SIZE = 4;
+export const GRID_SIZES: GridSize[] = [4, 5, 6];
 export const WINNING_SCORE = 2048;
 
 // Map values to colors (Tailwind classes or hex for dynamic styling)

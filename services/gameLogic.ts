@@ -1,15 +1,14 @@
-import { GRID_SIZE } from '../constants';
 import { Tile, Direction } from '../types';
 
 let uniqueIdCounter = 0;
 const generateId = () => `tile_${Date.now()}_${uniqueIdCounter++}`;
 
-export const getEmptyCells = (tiles: Tile[]) => {
+export const getEmptyCells = (tiles: Tile[], gridSize: number) => {
   const cells: { r: number; c: number }[] = [];
   const occupied = new Set(tiles.map(t => `${t.r},${t.c}`));
 
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
       if (!occupied.has(`${r},${c}`)) {
         cells.push({ r, c });
       }
@@ -18,8 +17,8 @@ export const getEmptyCells = (tiles: Tile[]) => {
   return cells;
 };
 
-export const spawnTile = (tiles: Tile[]): Tile[] => {
-  const emptyCells = getEmptyCells(tiles);
+export const spawnTile = (tiles: Tile[], gridSize: number): Tile[] => {
+  const emptyCells = getEmptyCells(tiles, gridSize);
   if (emptyCells.length === 0) return tiles;
 
   const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
@@ -38,10 +37,10 @@ export const spawnTile = (tiles: Tile[]): Tile[] => {
   ];
 };
 
-export const initializeGame = (): { tiles: Tile[]; score: number } => {
+export const initializeGame = (gridSize: number): { tiles: Tile[]; score: number } => {
   let tiles: Tile[] = [];
-  tiles = spawnTile(tiles);
-  tiles = spawnTile(tiles);
+  tiles = spawnTile(tiles, gridSize);
+  tiles = spawnTile(tiles, gridSize);
   return { tiles, score: 0 };
 };
 
@@ -51,7 +50,7 @@ type MoveResult = {
   moved: boolean;
 };
 
-export const moveTiles = (tiles: Tile[], direction: Direction): MoveResult => {
+export const moveTiles = (tiles: Tile[], direction: Direction, gridSize: number): MoveResult => {
   // Deep clone to avoid mutating state directly during calculation
   let nextTiles = tiles.map(t => ({ ...t, isNew: false, isMerged: false, mergedFrom: undefined }));
   let scoreIncrease = 0;
@@ -61,7 +60,7 @@ export const moveTiles = (tiles: Tile[], direction: Direction): MoveResult => {
   const isVertical = direction === 'UP' || direction === 'DOWN';
   const isAscending = direction === 'LEFT' || direction === 'UP'; // 0 -> 3
 
-  for (let i = 0; i < GRID_SIZE; i++) {
+  for (let i = 0; i < gridSize; i++) {
     // Get tiles in this specific row/col
     const lineTiles = nextTiles.filter(t => (isVertical ? t.c === i : t.r === i));
     
@@ -72,7 +71,7 @@ export const moveTiles = (tiles: Tile[], direction: Direction): MoveResult => {
       return isAscending ? posA - posB : posB - posA;
     });
 
-    let target = isAscending ? 0 : GRID_SIZE - 1;
+    let target = isAscending ? 0 : gridSize - 1;
     let mergeTarget: Tile | null = null;
 
     for (const tile of lineTiles) {
@@ -117,8 +116,8 @@ export const moveTiles = (tiles: Tile[], direction: Direction): MoveResult => {
   return { tiles: nextTiles, scoreIncrease, moved };
 };
 
-export const checkGameOver = (tiles: Tile[]): boolean => {
-  if (tiles.length < GRID_SIZE * GRID_SIZE) return false; // Has empty space
+export const checkGameOver = (tiles: Tile[], gridSize: number): boolean => {
+  if (tiles.length < gridSize * gridSize) return false; // Has empty space
 
   // Check for adjacent matches
   for (const tile of tiles) {
@@ -165,8 +164,8 @@ export const swapTiles = (tiles: Tile[], tileId1: string, tileId2: string): Tile
 
 
 // Helper to convert tiles to a 2D matrix for the AI
-export const tilesToMatrix = (tiles: Tile[]): number[][] => {
-  const matrix = Array(GRID_SIZE).fill(0).map(() => Array(GRID_SIZE).fill(0));
+export const tilesToMatrix = (tiles: Tile[], gridSize: number): number[][] => {
+  const matrix = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
   tiles.forEach(t => {
     matrix[t.r][t.c] = t.value;
   });
