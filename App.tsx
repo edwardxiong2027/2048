@@ -216,7 +216,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-900 overflow-x-hidden overflow-y-auto relative">
+    <div className="app-root h-full flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-900 overflow-hidden relative">
       
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-20">
@@ -225,7 +225,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="w-full max-w-xl flex flex-col md:flex-row justify-between items-center mb-6 z-10 px-2 sm:px-0 gap-4">
+      <div className="app-header w-full max-w-xl flex flex-col md:flex-row justify-between items-center mb-4 sm:mb-6 z-10 px-2 sm:px-0 gap-4">
         <div className="text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
             2048
@@ -272,7 +272,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Board Size Selector */}
-      <div className="w-full max-w-xl flex items-center justify-between mb-3 z-10 px-2 sm:px-0 gap-2">
+      <div className="w-full max-w-xl flex items-center justify-between mb-2 sm:mb-3 z-10 px-2 sm:px-0 gap-2">
         <span className="text-slate-300 text-sm font-semibold">Board Size</span>
         <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700 gap-1">
           {GRID_SIZES.map(size => (
@@ -293,7 +293,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Controls Bar */}
-      <div className="w-full max-w-xl flex flex-wrap justify-between mb-4 z-10 gap-2 px-2 sm:px-0 min-h-[52px]">
+      <div className="w-full max-w-xl flex flex-wrap justify-between mb-2 sm:mb-4 z-10 gap-2 px-2 sm:px-0 min-h-[52px]">
          {gameMode === 'fun' ? (
            <>
              {/* AI Hint */}
@@ -378,10 +378,10 @@ const App: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       {/* Game Board Container */}
       <div 
-        className="relative z-10 outline-none w-full max-w-xl"
+        className="relative z-10 outline-none w-[min(92vw,52svh)] max-w-xl touch-none select-none"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -457,7 +457,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Instructions / Footer */}
-      <div className="mt-8 text-center text-slate-500 text-xs md:text-sm max-w-xl">
+      <div className="app-footer mt-4 sm:mt-8 text-center text-slate-500 text-xs md:text-sm max-w-xl">
         <p>Use arrow keys or swipe to merge numbers.</p>
         <p className="mt-1">Reach <span className="text-pink-400 font-bold">2048</span> to win!</p>
       </div>

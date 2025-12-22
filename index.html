@@ -7,18 +7,38 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+      html,
       body {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      body {
+        position: fixed;
+        inset: 0;
         font-family: 'Outfit', sans-serif;
         background-color: #0f172a; /* Slate 900 */
         color: #f8fafc;
-        overscroll-behavior: contain;
-        min-height: 100%;
         margin: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
+        touch-action: none;
       }
-      html {
-        min-height: 100%;
+      #root {
+        height: 100%;
+      }
+
+      /* Short viewports (mobile landscape, small phones): prioritize keeping the board fully visible */
+      @media (max-height: 700px) {
+        .app-root {
+          padding: 0.5rem !important;
+          justify-content: flex-start !important;
+        }
+        .app-header {
+          margin-bottom: 0.75rem !important;
+        }
+        .app-footer {
+          display: none;
+        }
       }
     </style>
   <script type="importmap">
