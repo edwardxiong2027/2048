@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { Tile as TileType, GridSize } from '../types';
@@ -15,13 +15,6 @@ interface TileProps {
 
 const Tile: React.FC<TileProps> = ({ tile, gridSize, isInteractive, isSelected, isTarget, onClick }) => {
   const { value, r, c, isNew, isMerged } = tile;
-  const [scale, setScale] = useState(isNew ? 0 : 1);
-
-  useEffect(() => {
-    if (isNew) {
-      setScale(1);
-    }
-  }, [isNew]);
 
   // Determine color class
   const colorClass = TILE_COLORS[value] || TILE_COLORS['super'];
@@ -66,28 +59,33 @@ const Tile: React.FC<TileProps> = ({ tile, gridSize, isInteractive, isSelected, 
         opacity: 1
       }}
       transition={{
-        layout: { type: "spring", stiffness: 260, damping: 30 },
+        layout: { type: "spring", stiffness: 360, damping: 28 },
         type: "spring",
-        stiffness: 260,
-        damping: 30,
-        duration: 0.12
+        stiffness: 360,
+        damping: 28,
+        duration: 0.1
       }}
       className={clsx(
-        "aspect-square w-full h-full min-w-0 min-h-0 transform-gpu will-change-transform",
+        "w-full h-full min-w-0 min-h-0 transform-gpu will-change-transform",
         isInteractive ? "cursor-pointer z-20" : "pointer-events-none"
       )}
-      style={{ gridRowStart: r + 1, gridColumnStart: c + 1 }}
+      style={{ 
+        gridRowStart: r + 1, 
+        gridColumnStart: c + 1,
+        alignSelf: 'stretch',
+        justifySelf: 'stretch'
+      }}
       onClick={() => isInteractive && onClick?.(tile.id)}
     >
       <div
         className={clsx(
-        "w-full h-full min-w-0 min-h-0 rounded-lg flex items-center justify-center font-bold select-none transition-all duration-200 text-slate-50",
-        colorClass,
-        fontSize,
-        isSelected && "ring-4 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-xl",
-        isTarget && "ring-4 ring-red-500 ring-offset-2 ring-offset-slate-900 opacity-80",
-        isInteractive && !isSelected && "hover:scale-105 hover:brightness-110"
-      )}
+          "w-full h-full min-w-0 min-h-0 rounded-lg flex items-center justify-center text-center font-bold leading-none select-none transition-all duration-150 text-slate-50",
+          colorClass,
+          fontSize,
+          isSelected && "ring-4 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-xl",
+          isTarget && "ring-4 ring-red-500 ring-offset-2 ring-offset-slate-900 opacity-80",
+          isInteractive && !isSelected && "hover:scale-105 hover:brightness-110"
+        )}
       >
         <span className="block whitespace-nowrap leading-none tabular-nums">
           {value}

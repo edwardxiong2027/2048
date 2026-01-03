@@ -23,7 +23,7 @@ const Board: React.FC<BoardProps> = ({ tiles, gridSize, interactionMode, selecte
   return (
     <div
       className={`relative w-full max-w-xl aspect-square bg-slate-800 rounded-xl shadow-2xl mx-auto overflow-hidden ring-4 ring-slate-800/50 ${isInteractive ? 'cursor-crosshair' : ''}`}
-      style={{ padding: `${paddingRem}rem` }}
+      style={{ padding: `${paddingRem}rem`, aspectRatio: '1 / 1' }}
     >
       
       {/* Background Grid Layer */}

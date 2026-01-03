@@ -6,7 +6,7 @@ import { initializeGame, moveTiles, checkGameOver, tilesToMatrix, spawnTile, swa
 import { getBestMove, getGameCommentary } from './services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { GRID_SIZES } from './constants';
+import { GRID_SIZES, WINNING_SCORE } from './constants';
 
 const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>('fun');
@@ -16,7 +16,8 @@ const App: React.FC = () => {
     score: 0,
     bestScore: 0,
     status: 'playing',
-    history: []
+    history: [],
+    hasWon: false
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -50,6 +51,7 @@ const App: React.FC = () => {
       score,
       status: 'playing',
       history: [],
+      hasWon: false
     }));
     setAiHint(null);
     setAiComment(null);
@@ -69,41 +71,59 @@ const App: React.FC = () => {
     if (gameState.status !== 'playing' || isProcessing || interactionMode !== 'none') return;
     setIsProcessing(true);
 
-    const currentTiles = gameState.tiles;
-    const result = moveTiles(currentTiles, direction, gridSize);
+    const result = moveTiles(gameState.tiles, direction, gridSize);
     
-    if (result.moved) {
-      if (gameMode === 'fun') saveStateToHistory();
-      
-      setTimeout(() => {
-        const withNewTile = spawnTile(result.tiles, gridSize);
-        const isGameOver = checkGameOver(withNewTile, gridSize);
-        
-        setGameState(prev => {
-          const newScore = prev.score + result.scoreIncrease;
-          const newBest = Math.max(newScore, prev.bestScore);
-          localStorage.setItem(bestScoreKey(gameMode, gridSize), newBest.toString());
-
-          if (isGameOver && gameMode === 'fun') {
-             getGameCommentary(newScore, false).then(setAiComment);
-          }
-
-          return {
-            ...prev,
-            tiles: withNewTile,
-            score: newScore,
-            bestScore: newBest,
-            status: isGameOver ? 'lost' : 'playing',
-          };
-        });
-        
-        setIsProcessing(false);
-        setAiHint(null);
-      }, 150);
-    } else {
+    if (!result.moved) {
       setIsProcessing(false);
+      return;
     }
-  }, [gameState.status, gameState.tiles, gameState.score, isProcessing, saveStateToHistory, gameMode, interactionMode, gridSize, bestScoreKey]);
+
+    if (gameMode === 'fun') saveStateToHistory();
+
+    // Apply the move immediately so tiles shift without delay.
+    setGameState(prev => {
+      const newScore = prev.score + result.scoreIncrease;
+      const newBest = Math.max(newScore, prev.bestScore);
+      localStorage.setItem(bestScoreKey(gameMode, gridSize), newBest.toString());
+
+      const reachedWinningTile = result.tiles.some(t => t.value >= WINNING_SCORE);
+      const shouldTriggerWin = reachedWinningTile && !prev.hasWon;
+      const nextStatus = shouldTriggerWin ? 'won' : 'playing';
+
+      return {
+        ...prev,
+        tiles: result.tiles,
+        score: newScore,
+        bestScore: newBest,
+        status: nextStatus,
+        hasWon: prev.hasWon || reachedWinningTile,
+      };
+    });
+
+    // Slight delay to let the slide animation play before spawning a new tile.
+    setTimeout(() => {
+      setGameState(prev => {
+        const withNewTile = spawnTile(prev.tiles, gridSize);
+        const isGameOver = checkGameOver(withNewTile, gridSize);
+
+        const keepWon = prev.status === 'won';
+        if (isGameOver && gameMode === 'fun' && !keepWon) {
+          getGameCommentary(prev.score, false).then(setAiComment);
+        }
+
+        const nextStatus = keepWon ? 'won' : (isGameOver ? 'lost' : 'playing');
+
+        return {
+          ...prev,
+          tiles: withNewTile,
+          status: nextStatus,
+        };
+      });
+
+      setIsProcessing(false);
+      setAiHint(null);
+    }, 80);
+  }, [gameState.status, gameState.tiles, isProcessing, saveStateToHistory, gameMode, interactionMode, gridSize, bestScoreKey]);
 
   // Keyboard controls
   useEffect(() => {
@@ -139,6 +159,17 @@ const App: React.FC = () => {
       history: newHistory
     }));
     setAiHint(null);
+  };
+
+  const handleContinueAfterWin = () => {
+    setGameState(prev => ({ ...prev, status: 'playing', hasWon: true }));
+    setIsProcessing(false);
+    setAiHint(null);
+  };
+
+  const handleEndAfterWin = () => {
+    setGameState(prev => ({ ...prev, status: 'lost' }));
+    setIsProcessing(false);
   };
 
   const handleAskAI = async () => {
@@ -431,25 +462,42 @@ const App: React.FC = () => {
                   className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl text-center max-w-[80%]"
                 >
                   <h2 className="text-3xl font-bold mb-2 text-white">
-                    {gameState.status === 'won' ? 'You Won!' : 'Game Over'}
+                    {gameState.status === 'won' ? 'You reached 2048!' : 'Game Over'}
                   </h2>
                   <p className="text-slate-300 mb-4">
                     Final Score: <span className="text-white font-bold">{gameState.score}</span>
                   </p>
                   
-                  {aiComment && gameMode === 'fun' && (
+                  {aiComment && gameMode === 'fun' && gameState.status !== 'won' && (
                     <div className="mb-6 bg-indigo-900/30 p-3 rounded-lg border border-indigo-500/30">
                        <p className="text-xs text-indigo-300 uppercase font-bold mb-1">AI Reaction</p>
                        <p className="text-sm italic text-indigo-100">"{aiComment}"</p>
                     </div>
                   )}
 
-                  <button 
-                    onClick={startNewGame}
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-pink-500/25 transition-transform hover:scale-105 active:scale-95"
-                  >
-                    Play Again
-                  </button>
+                  {gameState.status === 'won' ? (
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={handleContinueAfterWin}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95"
+                      >
+                        Keep Playing
+                      </button>
+                      <button 
+                        onClick={handleEndAfterWin}
+                        className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95"
+                      >
+                        End Game
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={startNewGame}
+                      className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-pink-500/25 transition-transform hover:scale-105 active:scale-95"
+                    >
+                      Play Again
+                    </button>
+                  )}
                 </motion.div>
              </motion.div>
           )}

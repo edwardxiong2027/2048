@@ -15,6 +15,7 @@ export interface GameState {
   bestScore: number;
   status: 'playing' | 'won' | 'lost';
   history: { tiles: Tile[]; score: number }[]; // For Undo functionality
+  hasWon: boolean; // Tracks if 2048 was reached and acknowledged
 }
 
 export interface GridCell {
