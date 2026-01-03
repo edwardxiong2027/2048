@@ -19,21 +19,23 @@ const Board: React.FC<BoardProps> = ({ tiles, gridSize, interactionMode, selecte
   // Responsive gap/padding scale with grid size to fit small screens
   const gapRem = gridSize === 6 ? 0.35 : gridSize === 5 ? 0.5 : 0.75;
   const paddingRem = gridSize === 6 ? 0.6 : gridSize === 5 ? 0.8 : 1;
+  const gridStyle = {
+    gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+    gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+    gap: `${gapRem}rem`,
+    padding: `${paddingRem}rem`
+  };
 
   return (
     <div
       className={`relative w-full max-w-xl aspect-square bg-slate-800 rounded-xl shadow-2xl mx-auto overflow-hidden ring-4 ring-slate-800/50 ${isInteractive ? 'cursor-crosshair' : ''}`}
-      style={{ padding: `${paddingRem}rem`, aspectRatio: '1 / 1' }}
+      style={{ aspectRatio: '1 / 1' }}
     >
       
       {/* Background Grid Layer */}
       <div
         className="grid w-full h-full"
-        style={{
-          gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-          gridTemplateRows: `repeat(${gridSize}, 1fr)`,
-          gap: `${gapRem}rem`
-        }}
+        style={gridStyle}
       >
         {gridCells.map((_, i) => (
           <div 
@@ -46,12 +48,7 @@ const Board: React.FC<BoardProps> = ({ tiles, gridSize, interactionMode, selecte
       {/* Tiles Layer - Grid on top */}
       <div
         className="absolute inset-0 w-full h-full grid"
-        style={{
-          gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-          gridTemplateRows: `repeat(${gridSize}, 1fr)`,
-          gap: `${gapRem}rem`,
-          padding: `${paddingRem}rem`
-        }}
+        style={gridStyle}
       >
         {tiles.map(tile => (
           <Tile 
